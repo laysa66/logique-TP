@@ -1,0 +1,513 @@
+(*<------------------------ PROJET OCAML ------------------------------>*)
+https://try.ocamlpro.com/
+(*NOM : Matmar, PRENOM : Lysa, GROUPE : C, NUMERO_ETU:21815251*)
+
+
+(*  Syntaxe de la logique propositionnelle *) 
+type prop=
+  | Symb of string 
+  | Top
+  | Bot
+  | Not of prop
+  | And of prop * prop
+  | Or of prop * prop
+  | Imp of prop * prop
+  | Equ of prop * prop;;
+
+(*question 1*)
+
+let f1 = Equ ( And( Symb"a", Symb "b"), Or(Not(Symb"a"),Symb "b"));;
+
+let f2= Or(Not(And(Symb"a", Not(Symb"b"))), Not( Imp(Symb"a", Symb"b")));;
+
+let f3=And(Not(Imp(Symb"a",Or(Symb"a",Symb"b"))),Not(Not(And(Symb"a",Or(Symb"b",Not(Symb"c"))))));;
+let f4 =
+  And(
+    Or(Or(Not(Symb"a"), Symb"b"), Symb"d"),
+    And(
+      Or(Not(Symb"d"), Symb"c"),
+      And(
+        Or(Symb"c", Symb"a"),
+        And(
+          Or(Not(Symb"c"), Symb"b"),
+          And(
+            Or(Not(Symb"c"), Not(Symb"b")),
+            Or(Not(Symb"b"), Symb"d")
+          )
+        )
+      )
+    )
+  )
+
+
+(*question 2*) (*nbc f4;;  =18*)
+let rec nbc : prop -> int = function
+  | Symb _
+  | Top
+  | Bot -> 0
+  | Not q -> 1 + nbc q
+  |And (q,r)  -> 1+ nbc q + nbc r
+  |Or (q , r) -> 1+ nbc q + nbc r
+  |Imp (q , r) -> 1+ nbc q + nbc r
+  |Equ (q , r )-> 1+ nbc q + nbc r;; 
+
+   (*question 3*)  (*prof f4;; =7*)
+let rec prof: prop -> int = function 
+  |Symb s ->0
+  | Top -> 0
+  | Bot -> 0
+  | Not (p) -> 1+prof(p)
+  | And (p , q) -> 1+ max(prof(p))(prof(q))
+  | Or (p , q) -> 1+ max(prof(p))(prof(q))
+  | Imp (p , q) -> 1+ max(prof(p))(prof(q))
+  | Equ (p , q) -> 1+ max(prof(p))(prof(q));;
+
+(*question 4*) (* sp f4;; string list = ["d"; "b"; "c"; "a"]*)
+let rec ajoutSiAbsent a b= 
+  match b with 
+  |[] -> [a]
+  |hd :: tl when hd = a -> b
+  |hd :: tl -> hd::ajoutSiAbsent a tl;;
+
+let rec union l1 l2=
+  match l1 with 
+  |[] -> l2
+  |hd :: tl -> union tl (ajoutSiAbsent hd l2);;
+
+let rec sp (fbf : prop) : string list =
+  match fbf with 
+  |Symb s -> [s]
+  |Top -> []
+  |Bot -> []
+  |Not (p) -> sp p
+  |And(p,q) -> union (sp p) (sp q)
+  |Or(p,q) -> union (sp p) (sp q)
+  |Imp(p,q) -> union (sp p) (sp q)
+  |Equ(p,q) -> union (sp p) (sp q);;
+
+(* question 5 : *)
+(*affiche f1;;
+- : string = "((a ∧ b) ↔ (¬ (a) ∨ b))"
+*)
+let rec affiche (l : prop) : string =
+  match l with 
+  |Symb s -> Printf.sprintf"%s" s
+  |Top -> "T"
+  |Bot -> "F"
+  |Not (exp1) -> Printf.sprintf"¬ (%s)" (affiche exp1)
+  |And (exp1, exp2) -> Printf.sprintf"(%s ∧ %s)" (affiche exp1) (affiche exp2)
+  |Or (exp1, exp2) -> Printf.sprintf"(%s ∨ %s)" (affiche exp1) (affiche exp2)
+  |Imp (exp1, exp2) -> Printf.sprintf"(%s → %s)" (affiche exp1) (affiche exp2)
+  |Equ (exp1, exp2) -> Printf.sprintf"(%s ↔ %s)" (affiche exp1) (affiche exp2);;
+  
+
+(* question 6*)
+(*affichePri f1;;
+
+- : string = "a ∧ b ↔ ¬a ∨ b"
+*)
+let rec affichePri : prop -> string = function
+  | Symb s -> s
+  | Top -> "T"
+  | Bot -> "F"
+  | Not p -> Printf.sprintf "¬%s" (affichePri p)
+  | And (p, q) -> Printf.sprintf "%s ∧ %s" (affichePri p) (affichePri q)
+  | Or (p, q) -> Printf.sprintf "%s ∨ %s" (affichePri p) (affichePri q)
+  | Imp (p, q) -> Printf.sprintf "%s → %s" (affichePri p) (affichePri q)
+  | Equ (p, q) -> Printf.sprintf "%s ↔ %s" (affichePri p) (affichePri q);;
+
+  (*TEST*)
+  (*
+  let () =
+  let f1_str = affichePri f1 in
+  Printf.printf "Formule f1 : %s\n" f1_str;
+
+  let f2_str = affichePri f2 in
+  Printf.printf "Formule f2 : %s\n" f2_str;
+
+  let f3_str = affichePri f3 in
+  Printf.printf "Formule f3 : %s\n" f3_str;
+
+  let f4_str = affichePri f4 in
+  Printf.printf "Formule f4 : %s\n" f4_str;
+  *)
+
+
+
+
+(*Sémantiques des propositions*)
+
+type valVerite = Zero | Un ;;
+type interpretation = (string * valVerite) list;;
+
+(* question 7*)
+
+(*interpretation 1*)
+let i1=[("a",Un);("b",Zero);("c",Un)];;
+(*interpretation 2*)
+let i2=[("a",Zero);("b",Zero);("c",Zero)];;
+(*interpretation 3*)
+let i3=[("a",Un);("b",Un);("c",Un)];;
+
+(*question 8*)
+(*intSymb "b" i1;;
+
+- : valVerite = Zero
+*)
+let rec intSymb (p : string) (i : interpretation) : valVerite =
+  match i with 
+  |[] -> failwith("erreur symbole non présent")
+  |(symb,v)::_ when symb=p -> v
+  |_::tl -> intSymb p tl ;;
+
+(* question 9*)
+let intNeg (a : valVerite) : valVerite =
+  if a = Zero then Un else Zero ;; 
+
+let intAnd (a : valVerite) (b : valVerite) : valVerite =
+  if a = Un && b = Un then Un else Zero ;; 
+
+let intOr (a : valVerite) (b : valVerite) : valVerite =
+  if a = Un || b = Un then Un else Zero ;;
+
+let intImp (a : valVerite) (b : valVerite) : valVerite =
+  if a = Un && b = Zero then Zero else Un ;;
+
+let intEqu (a : valVerite) (b : valVerite) : valVerite =
+  if a = b then Un else Zero ;;
+
+let intTop : valVerite = Un ;;
+
+let intBot : valVerite = Zero ;;
+
+(*question 10*) 
+(*# valV f2 i3;;
+- : valVerite = Un*)
+let rec valV (formule: prop) (i: interpretation): valVerite = 
+  match formule with 
+  |Symb s -> intSymb s i
+  |Top -> intTop
+  |Bot -> intBot
+  |Not (exp1) -> intNeg (valV exp1 i)
+  |And (exp1, exp2) -> intAnd (valV exp1 i) (valV exp2 i)
+  |Or (exp1, exp2) -> intOr (valV exp1 i) (valV exp2 i)
+  |Imp (exp1, exp2) -> intImp (valV exp1 i) (valV exp2 i)
+  |Equ (exp1, exp2) -> intEqu (valV exp1 i) (valV exp2 i);; 
+
+(*question 11*) 
+(*# modele f2 i3;;
+- : bool = true
+*)
+let modele (formule : prop) (i : interpretation) : bool =
+  valV formule i = Un ;; 
+
+(*satisfiabilite et validite d'une proposition*) 
+
+type liste_interpretations=(string * valVerite) list list;;
+
+
+(*question 12*) 
+let i = [[("p",Zero);("q",Zero)]; (*0,0*)[("p",Zero);("q",Un)];(*0,1*)[("p",Un);("q",Zero)];(*1,0*)[("p",Un);("q",Un)]];;(*1,1*)
+                                                                                                                         
+                                                                                                                         
+(*question 13*) 
+(*consTous 2 [[1;3;4];[5;3];[];[2;7]];;
+
+- : int list list = [[2; 1; 3; 4]; [2; 5; 3]; [2]; [2; 2; 7]]
+*)
+(*# ensInt ["a"; "b"];;
+- : (string * valVerite) list list =
+[[("a", Un); ("b", Un)]; [("a", Un); ("b", Zero)]; [("a", Zero); ("b", Un)];
+ [("a", Zero); ("b", Zero)]]*)
+let rec consTous (e : 'a) (l : 'a list list) : 'a list list =
+  match l with 
+  | [] -> []
+  | hd :: tl -> (e :: hd) :: consTous e tl ;;
+
+let rec ensInt (l : 'a list) : ('a * valVerite) list list =
+  match l with 
+  |[] -> [[]]
+  |[hd] -> [[(hd,Un)];[(hd,Zero)]]
+  | hd :: tl -> consTous (hd,Un) (ensInt tl) @ consTous(hd,Zero) (ensInt tl);;
+(*la fonction ensInt prend une liste d'éléments de type 'a en entrée et renvoie une liste de listes d'éléments de type ('a * valVerite)*)
+
+
+(*question 14*)
+(*existeModele essaie i;;
+- : bool = true
+*)
+let rec existeModele (f : prop) (i : liste_interpretations) : bool  =
+  match i with
+  |[] -> false
+  | hd :: tl -> if modele f hd then true else existeModele f tl ;;
+
+let satisfiable (f : prop) : bool = existeModele f (ensInt (sp f));;
+(* Exemples *)
+let a = Symb "a";;
+let b = Symb "b";;
+let c = Symb "c";;
+let p = Symb "p";;
+let q = Symb "q";;
+(* #satisfiable f11;; 
+- : bool = true   *)
+let f11 = a;;
+let f12 = Not a;;
+let f13 = And (a, b);;
+let f14 = And (And (a, b), Not a);;
+let f15 = Or (Top, Not Bot);;
+let f16 = Imp (a, Or (b, Top));; 
+let b = Imp(b,b);;
+let essaie = Or(Imp(p,q),p);;
+let essaiePas= And(Equ(p,q),p);;
+
+
+(*question 15*)
+let rec tousModele (f : prop) (l : liste_interpretations) : bool =
+  match l with
+  | [] -> true
+  | hd :: tl -> modele f hd && tousModele f tl;;
+
+let valide (f : prop) : bool = tousModele f (ensInt (sp f));;
+(*question 16*)
+
+let insatisfiable (f: prop) : bool = not (existeModele f (ensInt (sp f)));;
+
+
+(* ensInt donne comme une table avec valeur de tout les symboles 
+  [[("a", Zero); ("b", Zero)]; [("a", Zero); ("b", Un)];
+[("a", Un); ("b", Zero)]; [("a", Un); ("b", Un)]]*)
+(* sp donne tout les symboles propos d'une fbf par ex: string list = ["a"; "b"]*)
+
+
+(* EQUIVALENCES ET CONSEQUENCES LOGIQUES *)
+(*question 17*)
+(*l c'est une liste d'interpretations*)
+
+let rec memesModeles (f1 : prop) (f2 : prop) (l : liste_interpretations) : bool =
+  match l with
+  |[] -> true
+  |hd::tl when valV f1 hd = valV f2 hd -> memesModeles f1 f2 tl
+  |hd::tl -> false;; 
+
+let equivalent1 (f1 : prop) (f2 : prop) : bool = valide(Equ(f1,f2));;
+let equivalent2 (f1 : prop) (f2 : prop) : bool = memesModeles f1 f2 (ensInt(union (sp f1) (sp f2))) = true;; 
+
+(*TEST *)
+let c = Symb"c";;
+let d = Symb"d";;
+let f5 = Or(Or(a,b), Not(a));;
+let f6 = Not(And (And (c,d) , Not (c)));;
+
+(*question 18:*)
+(*c est une consequence de h, donc h-->c est valide , donc h et non(c) est insatisfiable *)
+let consequence2 (h : prop) (c : prop) : bool = valide (Imp(h,c));; 
+
+(*les tests de la question 18 *)
+let f8 = Or( a, b);;
+let f9= And( a, b);;
+let f10= Or( (Or( a, b)),(Not(a)));;
+let f11= Not(And(And(c,d),(Not(c))));;
+let f12= And((And( a, b)),(Not(a)));;
+let f13=  Or(c,d);;
+
+(* question 19*)
+(* l'ensemble des symboles propositionnels *) 
+let rec tousSP (f : prop list) : string list =
+  match f with
+  |[] -> []
+  | hd :: tl -> union (sp(hd)) (tousSP (tl));; 
+
+
+  (*TEST*)
+(*let () =
+   let test1 = tousSP [f1; f2; f3; f4] in
+   Printf.printf "Symboles propositionnels pour [f1, f2, f3, f4] : %s\n" (String.concat ", " test1);
+
+   let test2 = tousSP [And(Symb "x", Or(Symb "y", Not(Symb "z"))); Or(Symb "a", Symb "b")] in
+   Printf.printf "Symboles propositionnels pour [x ∨ (y ∧ ¬z), a ∨ b] : %s\n" (String.concat ", " test2);
+
+   let test3 = tousSP [] in
+   Printf.printf "Symboles propositionnels pour une liste vide : %s\n" (String.concat ", " test3);*)
+
+(*question 20*) 
+let rec modeleCommun (i : interpretation) (f : prop list) : bool =
+  match f with
+  |[] -> true
+  |hd::tl -> if (modele hd i) = true then modeleCommun i tl else false;;
+
+(*TEST*)
+let f7 = Symb "a";;
+let f11 = Not (And (Or (Symb "a", Symb "b"), Not (Symb "a")));;
+let i0 = [("a", Un); ("b", Un)];;
+
+let result = modeleCommun i0 [f7; f11];; (*  true *)
+
+
+
+(*question 21 *) 
+
+
+let rec toutesInterpretations (symbols : string list) : liste_interpretations =
+  match symbols with
+  | [] -> [[]]
+  | sym :: rest ->
+      let interpretations_rest = toutesInterpretations rest in
+      let interpretations_with_true = List.map (fun i -> (sym, Un) :: i) interpretations_rest in
+      let interpretations_with_false = List.map (fun i -> (sym, Zero) :: i) interpretations_rest in
+      interpretations_with_true @ interpretations_with_false
+  
+let rec andList (props : prop list) : prop =
+  match props with
+  | [] -> Top
+  | [p] -> p
+  | hd :: tl -> And (hd, andList tl)
+
+
+let contradictoire (props : prop list) : bool =
+  let symbols = tousSP props in
+  let interpretations = toutesInterpretations symbols in
+  not (existeModele (andList props) interpretations)
+
+
+(* Exemple d'utilisation *)
+let f100 = Or (Symb "a", Symb "b");;
+let f200 = And (Symb "a", Not (Symb "b"));;
+let f300 = Imp (Symb "c", Symb "a");;
+
+let toto = contradictoire [f100; f200; f300];;(*false*)
+
+
+
+
+
+                                              
+(*question 22*)
+(*fonction consequence : retourne true si fbf + ensemble de formules -> f est une consequence logique de l'ensembles*) 
+
+let rec interm_prop fbf i =
+  match i with
+  | [] -> []
+  | [hd] -> if modeleCommun hd fbf then [hd] else []
+  | hd :: tl -> if modeleCommun hd fbf then hd :: interm_prop fbf tl else interm_prop fbf tl ;; 
+
+let consequence fbf h = (contradictoire fbf) || (tousModele h (interm_prop fbf (ensInt (tousSP (h::fbf)))));;
+
+let a = Symb "a";;
+let b = Symb "b";;
+let c = Symb "c";;
+let d = Symb "d";;
+
+let f1 = And (a, b);;
+let f2 = Not a;;
+let f3 = Imp (b, d);;
+
+let ensemble = [f1; f2; f3];;
+
+let conclusion = Imp (c, d);;
+
+let result = consequence ensemble conclusion;; (*true*)
+
+(* question 23 *)
+(* conjonction : conjonction de toutes les formules *)
+let rec conjonction (l : prop list) : prop =
+  match l with
+  | [] -> Top
+  | hd :: tl -> List.fold_left (fun x y -> And (x, y)) hd tl
+
+(* consequenceV : consequence logique + validite *)
+let consequenceV (f : prop list) (l : prop) : bool = valide (Imp (conjonction f, l));;
+
+(* question 24 *)
+(* consequenceI: lien entre consequence logique et insatisfiabilite *)
+let consequenceI (i : prop list) (f : prop) : bool = insatisfiable (And (conjonction i, Not f));;
+    
+    
+(* Exemple pour conjonction *)
+let f1 = And (Symb "a", Symb "b");;
+let f2 = Not (Symb "a");;
+let f3 = Imp (Symb "b", Symb "d");;
+
+let conj_result = conjonction [f1; f2; f3];;
+
+
+(* Exemple pour consequenceV *)
+let a = Symb "a";;
+let b = Symb "b";;
+let c = Symb "c";;
+let d = Symb "d";;
+
+let f1 = And (a, b);;
+let f2 = Not a;;
+let f3 = Imp (b, d);;
+
+let ensemble = [f1; f2; f3];;
+let conclusion = Imp (c, d);;
+
+let consV_result = consequenceV ensemble conclusion;;
+
+
+(* Exemple pour consequenceI *) 
+
+let consI_result = consequenceI [f1; f2; f3] conclusion;;
+
+(*------------------------------------------------------------------------------------------*) 
+(*1. Écrire une fonction modeles qui étant donnée une formule bien formée retourne la liste de tous ses modèles 
+(en se limitant aux interprétations des symboles apparaissant dans la formule). 
+Appliquer modeles aux 5 formules suivantes : a ∧ b , p ∨ ¬p , ⊥ , ⊤ et la formule z précédente.*) 
+    
+let rec modeles (fbf : prop) : liste_interpretations = 
+  match fbf with
+  | Symb s -> ensInt [s]
+  | Top -> ensInt []
+  | Bot -> []
+  | Not p -> modeles p
+  | And (p, q) -> ensInt (union (sp p) (sp q))
+  | Or (p, q) -> union (modeles p) (modeles q)
+  | Imp (p, q) -> union (modeles (Not p)) (modeles q)
+  | Equ (p, q) -> union (modeles (And (p, q))) (modeles (And (Not p, Not q)));; 
+
+(*1. Écrire une fonction plusVrai qui étant donnée une formule bien formée retourne vrai si la 
+formule possède strictement plus de modèles que de contre-modèles (en se limitant aux interprétations 
+des symboles apparaissant dans la formule).*)
+let compteModeles (fbf : prop) : int =
+  List.length (modeles fbf)
+
+let plusVrai (fbf : prop) : bool =
+  let nb_modeles = compteModeles fbf in
+  let nb_contre_modeles = List.length (ensInt (sp fbf)) - nb_modeles in
+  nb_modeles > nb_contre_modeles 
+  
+  
+
+(*2023*)
+let nonContingent (fbf : prop) : bool = valide fbf || insatisfiable fbf;;
+
+(*Écrire une fonction existeSousformuleInsatisfiable qui étant donnée une formule 
+bien formée retourne vrai si au moins une sous formule est insatis􏰂able. 
+Appliquer existeSousformuleInsatisfiable aux formules suivantes : b ∨ ¬a, a ∨ ¬a ⇒ ¬a ∧ a.*)
+
+let rec existeSousformuleInsatisfiable (fbf : prop) : bool =
+  match fbf with
+  | Symb _ -> false  (* Proposition atomique peut être insatisfiable si elle n'a pas de modèle *)
+  | Top -> true  (* Tautologie a une sous-formule insatisfiable si une de ses sous-formules est insatisfiable *)
+  | Bot -> false  (* Contradiction n'a pas de sous-formule insatisfiable *)
+  | Not p -> existeSousformuleInsatisfiable p
+  | And (p, q) | Or (p, q) | Imp (p, q) | Equ (p, q) ->
+      existeSousformuleInsatisfiable p || existeSousformuleInsatisfiable q;;
+
+(* Tests *)
+let f5 = Or (Symb "b", Not (Symb "a"));;
+let f6 = Equ (Or (Symb "a", Not (Symb "a")), And (Not (Symb "a"), Symb "a"));;
+
+let result5 = existeSousformuleInsatisfiable f5;;
+let result6 = existeSousformuleInsatisfiable f6;;
+
+Printf.printf "Resultat f5 : %b\n" result5;;
+Printf.printf "Resultat f6 : %b\n" result6;;
+
+
+            
+              
+
+  
+                     
