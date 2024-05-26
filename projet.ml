@@ -1,6 +1,6 @@
 (*<------------------------ PROJET OCAML ------------------------------>*)
 
-(*NOM : Matmar, PRENOM : Lysa, GROUPE : C, NUMERO_ETU:21815251*)
+(*NOM : Matmar, PRENOM : Lysa*)
 
 
 (*  Syntaxe de la logique propositionnelle *) 
